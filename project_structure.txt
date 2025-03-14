@@ -1,0 +1,19 @@
+.
+├── core
+│   ├── __init__.py
+│   ├── telegram_notifier.py
+│   ├── tripster_data_extractor.py
+│   └── wp_api_utils.py
+├── .env
+├── json
+│   ├── post_data.json
+│   └── tripster_links.json
+├── project_structure.txt
+├── README.md
+└── scripts
+    ├── inactive_widget_checker.py
+    ├── __init__.py
+    ├── tripster_link_processor.py
+    └── wordpress_post_indexer.py
+
+4 directories, 13 files
