@@ -9,6 +9,7 @@ load_dotenv()
 
 TRIPSTER_DOMAIN = os.getenv("TRIPSTER_DOMAIN", "tripster.ru")
 
+
 def process_tripster_links():
     """Извлекает и сохраняет виджеты и диплинки из постов WordPress."""
     try:
@@ -64,7 +65,8 @@ def process_tripster_links():
 
     tripster_links_file = core.wp_api_utils.construct_json_file_path(core.wp_api_utils.TRIPSTER_LINKS_FILE)
 
-    core.wp_api_utils.append_data_to_json_file(all_links_data, tripster_links_file)
+    # Используем save_data_to_json_file вместо append_data_to_json_file
+    core.wp_api_utils.save_data_to_json_file(all_links_data, tripster_links_file)
 
 
 def main():
@@ -73,4 +75,4 @@ def main():
 
 
 if __name__ == "__main__":
-        process_tripster_links()
+    process_tripster_links()
