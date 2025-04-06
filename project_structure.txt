@@ -1,18 +1,18 @@
 .
 ├── core
-│   ├── __init__.py
-│   ├── telegram_notifier.py
+│   ├── tripster_api_utils.py
 │   ├── tripster_data_extractor.py
 │   └── wp_api_utils.py
 ├── .env
 ├── json
+│   ├── post_data example.json
 │   ├── post_data.json
+│   ├── tripster_links example.json
 │   └── tripster_links.json
 ├── project_structure.txt
 ├── README.md
+├── requirements.txt
 └── scripts
-    ├── inactive_widget_checker.py
-    ├── __init__.py
     ├── tripster_link_processor.py
     └── wordpress_post_indexer.py
 

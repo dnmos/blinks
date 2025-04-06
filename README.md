@@ -110,7 +110,7 @@ blinks/
 *   **`project_structure.txt`**:  Файл `project_structure.txt`, содержащий структуру проекта в текстовом виде. Создан командой:
 
     ```bash
-    tree -a -I "env" . > project_structure.txt
+    tree -a -I "env|.git|.env_example|__init__.py" . > project_structure.txt
     ```
 
 *   **`requirements.txt`**:  Файл, содержащий список Python-библиотек, необходимых для работы проекта. Используется для установки зависимостей командой `pip install -r requirements.txt`.
