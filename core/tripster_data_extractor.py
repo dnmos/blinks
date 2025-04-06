@@ -70,11 +70,37 @@ def is_experience_page(soup):
 
 
 def is_listing_page(soup):
-    """Проверяет, является ли страница страницей списка экскурсий, авторской страницей или главной страницей."""
-    return any(
-        soup.find('div', class_=cls) is not None
-        for cls in [PRODUCT_HEADER_CLASS, DESTINATION_CLASS, AUTHOR_PAGE_CLASS, WELCOME_TOP_CLASS]
-    )
+    """Проверяет, является ли страница страницей списка экскурсий, авторской страницей или главной страницей и возвращает тип страницы и заголовок."""
+
+    def extract_title(element):
+        """Извлекает заголовок h1 из элемента, если он существует."""
+        if element:
+            title_element = element.find('h1')
+            if title_element:
+                return title_element.text.strip()
+        return None
+
+    product_header = soup.find('div', class_=PRODUCT_HEADER_CLASS)
+    if product_header:
+        title = extract_title(product_header)
+        return "Список экскурсий", title if title else None
+
+    destination = soup.find('div', class_=DESTINATION_CLASS)
+    if destination:
+         title = extract_title(destination)
+         return "Список экскурсий",  title if title else None
+
+    author_page = soup.find('div', class_=AUTHOR_PAGE_CLASS)
+    if author_page:
+        title = extract_title(author_page)
+        return "Авторская страница",  title if title else None
+
+    welcome_top = soup.find('div', class_=WELCOME_TOP_CLASS)
+    if welcome_top:
+        title = extract_title(welcome_top)
+        return "Главная страница",  title if title else None
+
+    return None, None
 
 
 def extract_experience_info(soup):
@@ -229,10 +255,10 @@ def extract_deeplinks(html_content, tripster_domain="tripster.ru"):
                     # Если ID извлечь не удалось
                     page_soup = fetch_and_parse_page(href)
                     if page_soup:
-                        page_type = is_listing_page(page_soup)
+                        page_type, page_title = is_listing_page(page_soup)
                         if page_type:
                             is_active = True
-                            title = page_type  #  Используем конкретный тип страницы
+                            title = page_title if page_title else page_type  #  Используем конкретный тип страницы или заголовок
                             reason = None
                             is_unknown = False
                         else:
