@@ -3,11 +3,12 @@ import json
 from dotenv import load_dotenv
 import core.wp_api_utils
 import core.tripster_data_extractor
-import core.telegram_notifier
 
 load_dotenv()
 
 TRIPSTER_DOMAIN = os.getenv("TRIPSTER_DOMAIN", "tripster.ru")
+MAX_RETRIES = 3
+RETRY_DELAY = 2
 
 
 def process_tripster_links():
@@ -34,7 +35,7 @@ def process_tripster_links():
 
     all_links_data = []
 
-    for post in post_data:
+    for post in post_data[7:8]:
         post_id = post.get('id')
         post_title = post.get('title')
 
@@ -44,11 +45,8 @@ def process_tripster_links():
             if full_post:
                 content = full_post
                 print(f"Обрабатывается пост ID: {post_id}, title: {post_title}")
-                widgets = core.tripster_data_extractor.extract_tripster_widgets(content, TRIPSTER_DOMAIN)
+                widgets = core.tripster_data_extractor.extract_tripster_widgets(content, TRIPSTER_DOMAIN, 'tripster-widget')
                 deeplinks = core.tripster_data_extractor.extract_deeplinks(content, TRIPSTER_DOMAIN)
-
-                for i, widget in enumerate(widgets):
-                    widget['widget_number'] = i + 1
 
                 links_data = {
                     'post_id': post_id,
