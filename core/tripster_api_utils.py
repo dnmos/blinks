@@ -1,4 +1,12 @@
 import requests
+import logging
+
+# Настройка базовой конфигурации логирования
+logging.basicConfig(
+    level=logging.INFO,  # Уровень логирования (можно менять через переменные окружения)
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
 
 def check_deeplink_status_api(deeplink_id):
     """
@@ -32,22 +40,21 @@ def check_deeplink_status_api(deeplink_id):
             # Экскурсия существует!
             experience = data_exists["results"][0]
             title = experience["title"]  # Получаем название
-            is_active = experience["status"] == "active" #  Определяем, активна ли экскурсия
+            is_active = experience["status"] == "active"  # Определяем, активна ли экскурсия
 
             if is_active:
                 # Экскурсия активна, нет смысла проверять дальше
                 reason = None
                 return is_active, reason, title
             else:
-                #Экскурсия существует, но не активна, reason тоже пока нет
+                # Экскурсия существует, но не активна, reason тоже пока нет
                 reason = None
-                
+
         else:
             # Экскурсия не найдена как активная
             title = "Экскурсия не найдена"
             is_active = False
             reason = "Экскурсия не найдена в API"
-
 
         # Если дошли до этого места, значит, экскурсия либо не найдена, либо она неактивна
         # Проверяем, существует ли экскурсия как неактивная (с параметром paused=true)
@@ -64,14 +71,14 @@ def check_deeplink_status_api(deeplink_id):
 
         if data_paused["count"] > 0 and data_paused["results"]:
             # Экскурсия найдена как неактивная, значит берем title отсюда
-             experience = data_paused["results"][0]
-             title = experience["title"]
-        
-        return is_active, reason, title #Возвращаем результат
+            experience = data_paused["results"][0]
+            title = experience["title"]
+
+        return is_active, reason, title  # Возвращаем результат
 
     except requests.exceptions.RequestException as e:
-        print(f"Ошибка при запросе к API: {e}")
+        logging.error(f"Ошибка при запросе к API: {e}")
         return False, f"Ошибка API: {e}", None
     except Exception as e:
-        print(f"Ошибка при обработке ответа API: {e}")
+        logging.error(f"Ошибка при обработке ответа API: {e}")
         return False, f"Ошибка обработки API: {e}", None

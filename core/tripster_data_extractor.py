@@ -6,6 +6,13 @@ import time
 import re
 from urllib.parse import urlparse, parse_qs
 from core.tripster_api_utils import check_deeplink_status_api
+import logging
+
+# Настройка базовой конфигурации логирования
+logging.basicConfig(
+    level=logging.INFO,  # Уровень логирования (можно менять через переменные окружения)
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
 # Константы
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -17,7 +24,7 @@ PRODUCT_HEADER_CLASS = 'product-header'
 DESTINATION_CLASS = 'destination'
 AUTHOR_PAGE_CLASS = 'author_page'
 WELCOME_TOP_CLASS = 'welcome-top'
-#TRIPSTER_WIDGET_CLASS = 'tripster-widget' #Удаляем
+TRIPSTER_WIDGET_CLASS = 'tripster-widget'
 
 
 def fetch_and_parse_page(url, max_retries=3, retry_delay=2):
@@ -35,7 +42,7 @@ def fetch_and_parse_page(url, max_retries=3, retry_delay=2):
     for attempt in range(max_retries):
         try:
             pause_time = random.uniform(1, 3)  # Пауза от 1 до 3 секунд
-            print(f"    Пауза перед запросом: {pause_time:.2f} секунд")
+            logging.info(f"    Пауза перед запросом: {pause_time:.2f} секунд")
             time.sleep(pause_time)
 
             headers = {'User-Agent': USER_AGENT}
@@ -47,18 +54,18 @@ def fetch_and_parse_page(url, max_retries=3, retry_delay=2):
             # Обработка ошибок, связанных с DNS
             if isinstance(e.args[0], requests.exceptions.ConnectionError) and isinstance(e.args[0].args[1], socket.gaierror):
                 error_message = f"Ошибка при запросе URL: Не удалось разрешить доменное имя (попытка {attempt + 1}/{max_retries})"
-                print(f"    {error_message}")
+                logging.error(f"    {error_message}")
                 time.sleep(retry_delay)  # Ждем перед следующей попыткой
                 continue  # Переходим к следующей итерации цикла
 
             # Другие ошибки RequestException
             error_message = f"Ошибка при запросе URL: {e}"
-            print(f"    {error_message}")
+            logging.error(f"    {error_message}")
             return None  # Возвращаем None в случае ошибки
 
         except Exception as e:
             error_message = f"Ошибка при обработке URL: {e}"
-            print(f"    {error_message}")
+            logging.error(f"    {error_message}")
             return None  # Возвращаем None в случае ошибки
 
     return None  # Если все попытки неудачны
@@ -107,20 +114,20 @@ def extract_experience_info(soup):
     """Извлекает информацию (заголовок и причину) со страницы неактивной экскурсии."""
     page_experience_wrap = soup.find('div', class_=PAGE_EXPERIENCE_WRAP_CLASS)
     if page_experience_wrap and page_experience_wrap.get('style') == 'display:none;':
-        print(f"    Экскурсия не проводится: Element {PAGE_EXPERIENCE_WRAP_CLASS} найден и имеет style=\"display:none;\".")
+        logging.info(f"    Экскурсия не проводится: Element {PAGE_EXPERIENCE_WRAP_CLASS} найден и имеет style=\"display:none;\".")
         exp_paused = soup.find('div', class_=EXP_PAUSED_CLASS)
         if exp_paused:
             reason_paragraph = exp_paused.find('p')
             reason = reason_paragraph.text.strip() if reason_paragraph else "Причина не указана"
             title_element = exp_paused.find('h3', class_=EXP_PAUSED_PREVIEW_NAME_CLASS)
             title = title_element.text.strip() if title_element else "Заголовок не найден"
-            print(f"    Причина: {reason}")
+            logging.info(f"    Причина: {reason}")
             return title, reason
         else:
-            print("    Причина не указана.")
+            logging.warning("    Причина не указана.")
             return "Заголовок не найден", "Причина не указана"
     else:
-        print(f"    Экскурсия активна: Element {PAGE_EXPERIENCE_WRAP_CLASS} не найден или style != \"display:none;\".")
+        logging.info(f"    Экскурсия активна: Element {PAGE_EXPERIENCE_WRAP_CLASS} не найден или style != \"display:none;\".")
         return None, None
 
 
@@ -128,23 +135,27 @@ def extract_widget_info(url, max_retries=3, retry_delay=2):
     """
     Извлекает информацию о неактивном виджете: заголовок и причину неактивности.
     """
-    soup = fetch_and_parse_page(url, max_retries, retry_delay)
+    try:
+        soup = fetch_and_parse_page(url, max_retries=3, retry_delay=2)
 
-    if not soup:
-        return None, "Не удалось получить данные страницы", False
+        if not soup:
+            return None, "Не удалось получить данные страницы", False
 
-    if is_experience_page(soup):
-        title, reason = extract_experience_info(soup)
-        if title and reason:
-            return title, reason, False
-        else:
+        if is_experience_page(soup):
+            title, reason = extract_experience_info(soup)
+            if title and reason:
+                return title, reason, False
+            else:
+                return None, None, False
+        elif is_listing_page(soup):
+            logging.info("    Страница со списком экскурсий, авторская страница или главная страница: Активна")
             return None, None, False
-    elif is_listing_page(soup):
-        print("    Страница со списком экскурсий, авторская страница или главная страница: Активна")
-        return None, None, False
-    else:
-        print("    Неизвестный тип страницы: Требуется ручная проверка.")
-        return None, "Требуется ручная проверка (неизвестный тип страницы)", True
+        else:
+            logging.warning("    Неизвестный тип страницы: Требуется ручная проверка.")
+            return None, "Требуется ручная проверка (неизвестный тип страницы)", True
+    except Exception as e:
+        logging.error(f"Ошибка при обработке URL: {url}. Ошибка: {e}")
+        return None, f"Ошибка при обработке: {e}", True
 
 
 def extract_deeplink_id(url):
@@ -162,11 +173,12 @@ def extract_deeplink_id(url):
             if match:
                 return int(match.group(1))
         return None
-    except Exception:
+    except Exception as e:
+        logging.error(f"Ошибка при извлечении deeplink_id из URL: {url}. Ошибка: {e}")
         return None
 
 
-def extract_tripster_widgets(html_content, tripster_domain="tripster.ru", TRIPSTER_WIDGET_CLASS = 'tripster-widget', max_retries=3, retry_delay=2):
+def extract_tripster_widgets(html_content, tripster_domain="tripster.ru", max_retries=3, retry_delay=2):
     """
     Извлекает виджеты Tripster из HTML-контента.
     """
@@ -260,7 +272,7 @@ def extract_deeplinks(html_content, tripster_domain="tripster.ru"):
                             is_active = True
                             title = page_title if page_title else page_type  #  Используем конкретный тип страницы или заголовок
                             reason = None
-                            is_unknown = False
+                            is_unknown = True
                         else:
                             is_active = False
                             title = "Без названия"
