@@ -219,8 +219,8 @@ def extract_tripster_widgets(html_content, tripster_domain="tripster.ru", max_re
                 url = None
 
             widgets.append({
-                'widget_number': len(widgets) + 1,  # нумерация виджетов
-                'id': int(widget_id) if widget_id else None,  # Преобразуем в int, если widget_id есть, иначе None
+                'widget_number': len(widgets) + 1,
+                'id': widget_id if widget_id else None,
                 'status': status,
                 'title': title,
                 'url': url if url else None,

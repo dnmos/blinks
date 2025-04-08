@@ -1,9 +1,21 @@
 .
 ├── core
+│   ├── __init__.py
 │   ├── tripster_api_utils.py
 │   ├── tripster_data_extractor.py
 │   └── wp_api_utils.py
+├── db
+│   ├── db.py
+│   ├── __init__.py
+│   └── sql
+│       ├── db_create_tables.sql
+│       ├── db_drop_tables.sql
+│       ├── db_insert_deeplink.sql
+│       ├── db_insert_widget.sql
+│       └── db_truncate_table.sql
 ├── .env
+├── .gitignore
+├── __init__.py
 ├── json
 │   ├── post_data example.json
 │   ├── post_data.json
@@ -13,7 +25,8 @@
 ├── README.md
 ├── requirements.txt
 └── scripts
+    ├── __init__.py
     ├── tripster_link_processor.py
     └── wordpress_post_indexer.py
 
-4 directories, 13 files
+6 directories, 24 files
