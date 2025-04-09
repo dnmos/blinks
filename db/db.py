@@ -122,22 +122,23 @@ def insert_or_update_data(data):
 
         with connection.cursor() as cursor:
             sql = """
-                INSERT INTO wptq_tripster_links (
-                  post_id,
-                  post_title,
-                  link_type,
-                  exp_id,
-                  exp_title,
-                  exp_url,
-                  status,
-                  inactivity_reason,
-                  is_unknown_type
-                ) VALUES (%(post_id)s, %(post_title)s, %(link_type)s, %(exp_id)s, %(exp_title)s, %(exp_url)s, %(status)s, %(inactivity_reason)s, %(is_unknown_type)s)
-                ON DUPLICATE KEY UPDATE
-                  post_title = VALUES(post_title),
-                  status = VALUES(status),
-                  inactivity_reason = VALUES(inactivity_reason),
-                  is_unknown_type = VALUES(is_unknown_type)
+                    INSERT INTO `wptq_tripster_links` (
+                    `post_id`,
+                    `post_title`,
+                    `link_type`,
+                    `exp_id`,
+                    `exp_title`,
+                    `exp_url`,
+                    `status`,
+                    `inactivity_reason`,
+                    `is_unknown_type`
+                    ) VALUES (%(post_id)s, %(post_title)s, %(link_type)s, %(exp_id)s, %(exp_title)s, %(exp_url)s, %(status)s, %(inactivity_reason)s, %(is_unknown_type)s)
+                    ON DUPLICATE KEY UPDATE
+                    `post_title` = VALUES(`post_title`),
+                    `exp_title` = VALUES(`exp_title`),
+                    `status` = VALUES(`status`),
+                    `inactivity_reason` = VALUES(`inactivity_reason`),
+                    `is_unknown_type` = VALUES(`is_unknown_type`);
             """
             cursor.execute(sql, data)
             connection.commit()

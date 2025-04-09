@@ -272,7 +272,7 @@ def extract_deeplinks(html_content, tripster_domain="tripster.ru"):
                             is_active = True
                             title = page_title if page_title else page_type  #  Используем конкретный тип страницы или заголовок
                             reason = None
-                            is_unknown = True
+                            is_unknown = False
                         else:
                             is_active = False
                             title = "Без названия"

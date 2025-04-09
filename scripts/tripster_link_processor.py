@@ -97,7 +97,7 @@ def process_tripster_links():
                             'exp_url': str(widget.get('url') or ''),
                             'status': str(widget.get('status') or ''),
                             'inactivity_reason': str(widget.get('inactivity_reason') or ''),
-                            'is_unknown_type': str(widget.get('is_unknown_type')).lower() if widget.get('is_unknown_type') is not None else 'false'
+                            'is_unknown_type': widget.get('is_unknown_type') if widget.get('is_unknown_type') is not None else False
                         }
                         # Вставляем или обновляем данные
                         logging.info(f"Вставляем виджет: {data}")
@@ -109,12 +109,12 @@ def process_tripster_links():
                             'post_id': str(post_id),
                             'post_title': str(post_title),
                             'link_type': 'deeplink',
-                            'exp_id': str(deeplink.get('id') or ''),
+                            'exp_id': str(deeplink.get('anchor') or ''),
                             'exp_title': str(deeplink.get('title') or ''),
                             'exp_url': str(deeplink.get('url') or ''),
                             'status': str(deeplink.get('status') or ''),
                             'inactivity_reason': str(deeplink.get('inactivity_reason') or ''),
-                            'is_unknown_type': str(deeplink.get('is_unknown_type')).lower() if deeplink.get('is_unknown_type') is not None else 'false'
+                            'is_unknown_type': deeplink.get('is_unknown_type') if deeplink.get('is_unknown_type') is not None else False
                         }
                         # Вставляем или обновляем данные
                         logging.info(f"Вставляем deeplink: {data}")
