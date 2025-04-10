@@ -3,8 +3,10 @@ import json
 from dotenv import load_dotenv
 import os
 import logging
+from urllib.parse import urljoin
 
 # Настройка базовой конфигурации логирования
+DEFAULT_LOG_LEVEL = logging.INFO
 logging.basicConfig(
     level=logging.INFO,  # Уровень логирования (можно менять через переменные окружения)
     format='%(asctime)s - %(levelname)s - %(message)s'
@@ -12,19 +14,27 @@ logging.basicConfig(
 
 load_dotenv()
 
-BASE_URL = os.getenv("BASE_URL")
-if BASE_URL and not BASE_URL.startswith("https://"):
-    BASE_URL = "https://" + BASE_URL
+DOMAIN_TO_CHECK = os.getenv("DOMAIN_TO_CHECK")
+if DOMAIN_TO_CHECK:
+    if DOMAIN_TO_CHECK.startswith(("https://", "http://")):
+        logging.warning("DOMAIN_TO_CHECK должен указываться без 'https://' или 'http://'")
 
 API_PATH = os.getenv("API_PATH", "/wp-json/wp/v2/posts")
-API_URL = BASE_URL + API_PATH
+API_URL = "https://" + DOMAIN_TO_CHECK + API_PATH if DOMAIN_TO_CHECK else None
 JSON_DIR = os.getenv("JSON_DIR", "json")
 POST_DATA_FILE = os.getenv("POST_DATA_FILE", "post_data.json")
-TRIPSTER_LINKS_FILE = os.getenv("TRIPSTER_LINKS_FILE", "tripster_links.json")
-
 
 def fetch_wordpress_posts(api_url, page=1):
-    """Получает список постов из WordPress API с учетом пагинации."""
+    """
+    Получает список постов из WordPress API с учетом пагинации.
+
+    Args:
+        api_url (str): URL API WordPress.
+        page (int): Номер страницы.
+
+    Returns:
+        tuple: (list, int) - список постов и общее количество страниц.
+    """
     try:
         response = requests.get(f"{api_url}?page={page}")
         response.raise_for_status()
@@ -36,7 +46,16 @@ def fetch_wordpress_posts(api_url, page=1):
 
 
 def fetch_wordpress_post_by_id(api_url, post_id):
-    """Получает данные поста по его ID из API WordPress."""
+    """
+    Получает данные поста по его ID из API WordPress.
+
+    Args:
+        api_url (str): URL API WordPress.
+        post_id (int): ID поста.
+
+    Returns:
+        str: HTML-контент поста.
+    """
     try:
         response = requests.get(f"{api_url}/{post_id}")
         response.raise_for_status()

@@ -1,13 +1,22 @@
 import requests
 import logging
+import os
+from dotenv import load_dotenv
+from functools import lru_cache
+
+load_dotenv()
 
 # Настройка базовой конфигурации логирования
+DEFAULT_LOG_LEVEL = logging.INFO
 logging.basicConfig(
     level=logging.INFO,  # Уровень логирования (можно менять через переменные окружения)
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
+TRIPSTER_API_URL = os.getenv("TRIPSTER_API_URL", "https://experience.tripster.ru/api/partners/travelpayouts/search/experiences/")
 
+
+@lru_cache(maxsize=128)
 def check_deeplink_status_api(deeplink_id):
     """
     Проверяет статус диплинка через API Tripster, делая один или два запроса:
@@ -23,7 +32,7 @@ def check_deeplink_status_api(deeplink_id):
                reason (str): Причина неактивности (если известна), иначе None.
                title (str): Название экскурсии.
     """
-    api_url = "https://experience.tripster.ru/api/partners/travelpayouts/search/experiences/"
+    api_url = TRIPSTER_API_URL
 
     try:
         # 1. Проверяем, существует ли экскурсия как активная (без параметра paused)

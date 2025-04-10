@@ -5,17 +5,19 @@ import random
 import time
 import re
 from urllib.parse import urlparse, parse_qs
-from core.tripster_api_utils import check_deeplink_status_api
 import logging
+import os
+from dotenv import load_dotenv
+from core.tripster_api_utils import check_deeplink_status_api  # Добавлен импорт
 
-# Настройка базовой конфигурации логирования
-logging.basicConfig(
-    level=logging.INFO,  # Уровень логирования (можно менять через переменные окружения)
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+load_dotenv()
+
+# Настройка логирования
+DEFAULT_LOG_LEVEL = logging.INFO
+logging.basicConfig(level=DEFAULT_LOG_LEVEL, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Константы
-USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+USER_AGENT = os.getenv("USER_AGENT", 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
 PAGE_EXPERIENCE_CLASS = 'page-experience'
 PAGE_EXPERIENCE_WRAP_CLASS = 'page-experience__wrap'
 EXP_PAUSED_CLASS = 'exp-paused'
@@ -72,13 +74,28 @@ def fetch_and_parse_page(url, max_retries=3, retry_delay=2):
 
 
 def is_experience_page(soup):
-    """Проверяет, является ли страница страницей экскурсии."""
+    """
+    Проверяет, является ли страница страницей экскурсии.
+
+    Args:
+        soup (BeautifulSoup): Объект BeautifulSoup с распарсенным HTML.
+
+    Returns:
+        bool: True, если страница является страницей экскурсии, False - в противном случае.
+    """
     return soup.find('div', class_=PAGE_EXPERIENCE_CLASS) is not None
 
 
 def is_listing_page(soup):
-    """Проверяет, является ли страница страницей списка экскурсий, авторской страницей или главной страницей и возвращает тип страницы и заголовок."""
+    """
+    Проверяет, является ли страница страницей списка экскурсий, авторской страницей или главной страницей и возвращает тип страницы и заголовок.
 
+    Args:
+        soup (BeautifulSoup): Объект BeautifulSoup с распарсенным HTML.
+
+    Returns:
+        tuple: (str, str) - тип страницы и заголовок (если есть).  None, None - если не удалось определить тип страницы.
+    """
     def extract_title(element):
         """Извлекает заголовок h1 из элемента, если он существует."""
         if element:
@@ -104,14 +121,22 @@ def is_listing_page(soup):
 
     welcome_top = soup.find('div', class_=WELCOME_TOP_CLASS)
     if welcome_top:
-        title = extract_title(welcome_top)
+        title = extract_title(author_page)
         return "Главная страница",  title if title else None
 
     return None, None
 
 
 def extract_experience_info(soup):
-    """Извлекает информацию (заголовок и причину) со страницы неактивной экскурсии."""
+    """
+    Извлекает информацию (заголовок и причину) со страницы неактивной экскурсии.
+
+    Args:
+        soup (BeautifulSoup): Объект BeautifulSoup с распарсенным HTML.
+
+    Returns:
+        tuple: (str, str) - заголовок и причина неактивности.  None, None - если не удалось извлечь информацию.
+    """
     page_experience_wrap = soup.find('div', class_=PAGE_EXPERIENCE_WRAP_CLASS)
     if page_experience_wrap and page_experience_wrap.get('style') == 'display:none;':
         logging.info(f"    Экскурсия не проводится: Element {PAGE_EXPERIENCE_WRAP_CLASS} найден и имеет style=\"display:none;\".")
@@ -134,6 +159,14 @@ def extract_experience_info(soup):
 def extract_widget_info(url, max_retries=3, retry_delay=2):
     """
     Извлекает информацию о неактивном виджете: заголовок и причину неактивности.
+
+    Args:
+        url (str): URL страницы виджета.
+        max_retries (int): Максимальное количество повторных попыток.
+        retry_delay (int): Задержка между попытками в секундах.
+
+    Returns:
+        tuple: (str, str, bool) - заголовок, причина неактивности, признак неизвестного типа страницы.  None, None, False - если не удалось извлечь информацию.
     """
     try:
         soup = fetch_and_parse_page(url, max_retries=3, retry_delay=2)
@@ -159,7 +192,15 @@ def extract_widget_info(url, max_retries=3, retry_delay=2):
 
 
 def extract_deeplink_id(url):
-    """Извлекает ID диплинка из URL."""
+    """
+    Извлекает ID диплинка из URL.
+
+    Args:
+        url (str): URL диплинка.
+
+    Returns:
+        int: ID диплинка, или None, если не удалось извлечь ID.
+    """
     try:
         parsed_url = urlparse(url)
         query_params = parse_qs(parsed_url.query)
@@ -181,6 +222,15 @@ def extract_deeplink_id(url):
 def extract_tripster_widgets(html_content, tripster_domain="tripster.ru", max_retries=3, retry_delay=2):
     """
     Извлекает виджеты Tripster из HTML-контента.
+
+    Args:
+        html_content (str): HTML-контент страницы.
+        tripster_domain (str, optional): Домен Tripster. Defaults to "tripster.ru".
+        max_retries (int, optional): Максимальное количество попыток при запросе URL. Defaults to 3.
+        retry_delay (int, optional): Задержка между попытками в секундах. Defaults to 2.
+
+    Returns:
+        list: Список словарей с информацией о виджетах.
     """
     widgets = []
     soup = BeautifulSoup(html_content, 'html.parser')
@@ -234,7 +284,16 @@ def extract_tripster_widgets(html_content, tripster_domain="tripster.ru", max_re
 
 
 def extract_deeplinks(html_content, tripster_domain="tripster.ru"):
-    """Извлекает диплинки Tripster из HTML-контента, исключая ссылки внутри виджетов."""
+    """
+    Извлекает диплинки Tripster из HTML-контента, исключая ссылки внутри виджетов.
+
+    Args:
+        html_content (str): HTML-контент страницы.
+        tripster_domain (str, optional): Домен Tripster. Defaults to "tripster.ru".
+
+    Returns:
+        list: Список словарей с информацией о диплинках.
+    """
     deeplinks = []
     seen_links = set()
     soup = BeautifulSoup(html_content, 'html.parser')

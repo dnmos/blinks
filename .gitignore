@@ -1,9 +1,5 @@
 # Blinks
-.env
-core/__pycache__/
 json/post_data.json
-json/tripster_links.json
-scripts/__pycache__/
 
 #Python
 # Byte-compiled / optimized / DLL files

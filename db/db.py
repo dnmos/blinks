@@ -6,46 +6,75 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Настройка логирования
+DEFAULT_LOG_LEVEL = logging.INFO
+logging.basicConfig(level=DEFAULT_LOG_LEVEL, format='%(asctime)s - %(levelname)s - %(message)s')
+
 
 def parse_sql(filename):
-    data = open(filename, "r").readlines()
+    """
+    Парсит SQL-файл и возвращает список SQL-запросов.
+
+    Args:
+        filename (str): Имя SQL-файла.
+
+    Returns:
+        list: Список SQL-запросов.
+    """
     queries = []
     DELIMITER = ";"
     query = ""
 
-    for line in data:
-        if not line.strip():
-            continue
+    try:
+        with open(filename, "r") as file:
+            data = file.readlines()
 
-        if line.startswith("--"):
-            continue
+        for line in data:
+            if not line.strip():
+                continue
 
-        if DELIMITER not in line:
-            query += line.replace(DELIMITER, ";")
-            query.strip()
-            continue
+            if line.startswith("--"):
+                continue
 
-        if query:
-            query += line
-            queries.append(query.strip())
-            query = ""
-        else:
-            queries.append(line.strip())
-    return queries
+            if DELIMITER not in line:
+                query += line.replace(DELIMITER, ";")
+                query.strip()
+                continue
+
+            if query:
+                query += line
+                queries.append(query.strip())
+                query = ""
+            else:
+                queries.append(line.strip())
+        return queries
+    except FileNotFoundError as e:
+        logging.error(f"Файл {filename} не найден: {e}")
+        return []
+    except Exception as e:
+        logging.error(f"Ошибка при парсинге SQL файла {filename}: {e}")
+        return []
 
 
 def connect():
+    """
+    Устанавливает соединение с базой данных MySQL.
+
+    Returns:
+        pymysql.Connection: Объект соединения с базой данных, или None в случае ошибки.
+    """
     try:
-        connection = pymysql.connect(
-            host=os.getenv("DB_HOST"),
-            user=os.getenv("DB_USER"),
-            database=os.getenv("DB_NAME"),
-            password=os.getenv("DB_PASSWORD"),
-            cursorclass=pymysql.cursors.DictCursor,
-            use_unicode=True,
-            charset="utf8",
-            autocommit=True
-        )
+        db_config = {
+            'host': os.getenv("DB_HOST"),
+            'user': os.getenv("DB_USER"),
+            'database': os.getenv("DB_NAME"),
+            'password': os.getenv("DB_PASSWORD"),
+            'cursorclass': pymysql.cursors.DictCursor,
+            'use_unicode': True,
+            'charset': "utf8",
+            'autocommit': True
+        }
+        connection = pymysql.connect(**db_config)
 
         logging.info("Успешное подключение к БД.")
         return connection
@@ -55,60 +84,62 @@ def connect():
         return None
 
 
-def create():
+def execute_sql_file(connection, filename):
+    """
+    Выполняет SQL-запросы из файла.
+
+    Args:
+        connection (pymysql.Connection): Объект соединения с базой данных.
+        filename (str): Имя SQL-файла.
+    """
     try:
-        connection = connect()
-        if connection is None:
-            logging.error("Не удалось установить соединение с БД, выход из create().")
-            return
-
-        # Предполагается, что CREATE_TABLES_QUERY_PATH тоже в .env, если нет - подправьте
-        create_tables_query_path = os.getenv("CREATE_TABLES_QUERY_PATH")
-        if not create_tables_query_path:
-            logging.error("Не задан CREATE_TABLES_QUERY_PATH в .env")
-            return
-
-        queries = parse_sql(create_tables_query_path)
+        queries = parse_sql(filename)
         with connection.cursor() as cursor:
             for query in queries:
                 cursor.execute(query)
                 logging.info("Query is executed")
             connection.commit()
     except Exception as e:
-        logging.error(f"Ошибка при создании таблиц: {e}")
+        logging.error(f"Ошибка при выполнении SQL-запросов из файла {filename}: {e}")
         logging.error(traceback.format_exc())
-    finally:
-        if connection:
-            connection.close()
-            logging.info("Соединение с БД закрыто.")
+
+
+def create():
+    """Создает таблицы в базе данных."""
+    connection = connect()
+    if connection is None:
+        logging.error("Не удалось установить соединение с БД, выход из create().")
+        return
+
+    create_tables_query_path = os.getenv("CREATE_TABLES_QUERY_PATH")
+    if not create_tables_query_path:
+        logging.error("Не задан CREATE_TABLES_QUERY_PATH в .env")
+        return
+
+    execute_sql_file(connection, create_tables_query_path)
+
+    if connection:
+        connection.close()
+        logging.info("Соединение с БД закрыто.")
 
 
 def drop():
-    try:
-        connection = connect()
-        if connection is None:
-            logging.error("Не удалось установить соединение с БД, выход из drop().")
-            return
+    """Удаляет таблицы из базы данных."""
+    connection = connect()
+    if connection is None:
+        logging.error("Не удалось установить соединение с БД, выход из drop().")
+        return
 
-        # Предполагается, что DROP_TABLES_QUERY_PATH тоже в .env, если нет - подправьте
-        drop_tables_query_path = os.getenv("DROP_TABLES_QUERY_PATH")
-        if not drop_tables_query_path:
-            logging.error("Не задан DROP_TABLES_QUERY_PATH в .env")
-            return
+    drop_tables_query_path = os.getenv("DROP_TABLES_QUERY_PATH")
+    if not drop_tables_query_path:
+        logging.error("Не задан DROP_TABLES_QUERY_PATH в .env")
+        return
 
-        queries = parse_sql(drop_tables_query_path)
-        with connection.cursor() as cursor:
-            for query in queries:
-                cursor.execute(query)
-                logging.info("Query is executed")
-            connection.commit()
-    except Exception as e:
-        logging.error(f"Ошибка при удалении таблиц: {e}")
-        logging.error(traceback.format_exc())
-    finally:
-        if connection:
-            connection.close()
-            logging.info("Соединение с БД закрыто.")
+    execute_sql_file(connection, drop_tables_query_path)
+
+    if connection:
+        connection.close()
+        logging.info("Соединение с БД закрыто.")
 
 
 def insert_or_update_data(data):
@@ -143,14 +174,15 @@ def insert_or_update_data(data):
             cursor.execute(sql, data)
             connection.commit()
 
-
     except pymysql.err.IntegrityError as e:
         logging.error(f"Ошибка IntegrityError: {e}")
-        connection.rollback() # Откатываем транзакцию при ошибке
+        if connection:
+            connection.rollback() # Откатываем транзакцию при ошибке
     except Exception as e:
         logging.error(f"Ошибка при вставке/обновлении данных: {e}")
         logging.error(traceback.format_exc())
-        connection.rollback()
+        if connection:
+            connection.rollback()
     finally:
         if connection:
             connection.close()

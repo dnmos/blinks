@@ -35,20 +35,14 @@
 
     ```env
     PROJECT_ROOT = ""       # Корневая директория проекта (абсолютный путь).  Например: /home/user/blinks.  Используется для определения абсолютных путей к файлам и директориям внутри проекта.
-
-    BASE_URL = ""           # Доменное имя вашего сайта WordPress (например: your-site.com).  Используется для формирования URL-адресов WordPress API.  **Должен начинаться с `https://`.**
-
+    DOMAIN_TO_CHECK = ""    # Доменное имя вашего сайта WordPress (например: your-site.com).  Используется для формирования URL-адресов WordPress API.  **Должен указываться без `https://`.**
     API_PATH = "/wp-json/wp/v2/posts"  # Путь к API WordPress для получения постов.  Обычно не требует изменений.
-
     POSTS_PER_PAGE = 10      # Количество постов WordPress, получаемых за один запрос к API.  Влияет на количество запросов к API и скорость работы скрипта wordpress_post_indexer.py.
-
     TRIPSTER_DOMAIN = "tripster.ru" # Домен Tripster, используется для фильтрации и проверки ссылок, чтобы убедиться, что они ведут на сайт Tripster.
-
     JSON_DIR = "json"         # Директория для хранения JSON файлов с собранными данными.  Относительный путь от `PROJECT_ROOT`.
-
     POST_DATA_FILE = "post_data.json" # Имя файла для сохранения данных о постах WordPress (ID и заголовки).  Используется скриптом wordpress_post_indexer.py и tripster_link_processor.py.
-
-    TRIPSTER_LINKS_FILE = "tripster_links.json" # Имя файла для сохранения списка ссылок Tripster (виджеты и партнерские ссылки). Используется скриптом tripster_link_processor.py.
+    TRIPSTER_API_URL = ""    # URL для запросов к API Tripster
+    USER_AGENT = ""          # User-Agent для HTTP-запросов
 
     # DB
     DB_HOST = ""          # Хост базы данных MySQL (например: localhost).
@@ -58,55 +52,48 @@
     ```
     Заполните значения напротив каждой переменной в файле `.env`. **Важно: Не удаляйте и не изменяйте названия переменных.**
 
-**Порядок запуска скриптов:**
+**Запуск скриптов:**
 
-Для корректной работы `Blink` необходимо запустить скрипты в следующей последовательности:
-
-1.  **`wordpress_post_indexer.py`**: Запрашивает посты из WordPress API, получает post_id и title, сохраняет их в JSON (`json/post_data.json`).
-    ```bash
-    python -m scripts.wordpress_post_indexer
-    ```
-
-2.  **`tripster_link_processor.py`**: Извлекает виджеты и партнерские ссылки Tripster из постов, сохраняет их в базу данных MySQL.
-    ```bash
-    python -m scripts.tripster_link_processor
-    ```
+```bash
+python main.py
+```
 
 ## Структура проекта
 
-Проект `Blink` организован в следующие директории и файлы:
+Проект Blink организован в следующие директории и файлы:
 
 ```
 blinks/
 ├── core/
-│ ├── tripster_api_utils.py
-│ ├── tripster_data_extractor.py
-│ └── wp_api_utils.py
-├── db/ # Директория для работы с БД
-│ ├── db.py # Функции для работы с базой данных
-│ └── sql/ # Директория для хранения SQL-запросов
-│ ├── db_create_tables.sql # SQL-запрос для создания таблиц
-│ ├── db_drop_tables.sql # SQL-запрос для удаления таблиц
-│ └── db_insert_tripster.sql # SQL-запрос для вставки/обновления данных
+│   ├── __init__.py
+│   ├── tripster_api_utils.py
+│   ├── tripster_data_extractor.py
+│   └── wp_api_utils.py
+├── db/
+│   ├── db.py
+│   ├── __init__.py
+│   └── sql
+│       └── db_create_tables.sql
 ├── .env
+├── .gitignore
+├── __init__.py
 ├── json/
-│ └── post_data.json
+│   ├── post_data example.json
+│   └── post_data.json
+├── main.py
 ├── project_structure.txt
 ├── README.md
 ├── requirements.txt
 └── scripts/
-├── tripster_link_processor.py
-└── wordpress_post_indexer.py
-```
-
-```
-tree -a -I "env|.git|.env_example|__init__.py" . > project_structure.txt
+    ├── __init__.py
+    ├── tripster_link_processor.py
+    └── wordpress_post_indexer.py
 ```
 
 **Описание директорий и файлов:**
 
 *   **`core/`**: Директория, содержащая основные, переиспользуемые модули проекта.
-    *   `tripster_api_utils.py`: Модуль, содержащий утилитарные функции для работы с API Tripster.
+    *   `tripster_api_utils.py`: Модуль, содержащий утилитарные функции для работы с API Tripster.  Результаты работы функции `check_deeplink_status_api` кешируются для повышения производительности.
     *   `tripster_data_extractor.py`: Модуль, предназначенный для извлечения данных, связанных с Tripster (виджеты, партнерские ссылки) из HTML-контента.
     *   `wp_api_utils.py`: Модуль, содержащий утилитарные функции для работы с WordPress API.
 
@@ -114,14 +101,13 @@ tree -a -I "env|.git|.env_example|__init__.py" . > project_structure.txt
     *   `db.py`: Модуль, содержащий функции для подключения к базе данных, выполнения запросов и обработки результатов.
     *   `sql/`: Директория для хранения SQL-запросов.
         *   `db_create_tables.sql`: SQL-запрос для создания таблиц в базе данных.
-        *   `db_drop_tables.sql`: SQL-запрос для удаления таблиц из базы данных.
-        *   `db_insert_tripster.sql`: SQL-запрос для вставки или обновления данных о виджетах и ссылках Tripster.
 
 *   **.env**: Файл конфигурации, содержащий переменные окружения, необходимые для работы скриптов (токены, URL сайта, параметры подключения к базе данных и т.д.). **Важно: Создайте этот файл на основе `.env_example` и заполните пустые значения. НИКОГДА не коммитьте файл `.env` в репозиторий!**
 
 *   **`json/`**: Директория для хранения JSON-файлов.
     *   `post_data.json`: Файл, в котором хранятся данные о постах WordPress (ID, заголовки), полученные скриптом `wordpress_post_indexer.py`.
-    *   `tripster_links.json`: **Больше не используется**.
+
+*   **`main.py`**: Главный скрипт, запускающий `wordpress_post_indexer.py` и `tripster_link_processor.py` последовательно.
 
 *   **`project_structure.txt`**: Файл `project_structure.txt`, содержащий структуру проекта в текстовом виде.
 
@@ -141,7 +127,7 @@ tree -a -I "env|.git|.env_example|__init__.py" . > project_structure.txt
     *   `construct_json_file_path(filename)`: Строит полный путь к JSON-файлу, учитывая директорию JSON_DIR.
     *   `save_data_to_json_file(data, filename=None)`: Сохраняет данные в JSON-файл.
 *   **`core/tripster_api_utils.py`**:
-    *   `check_deeplink_status_api(deeplink_id)`: Проверяет статус диплинка через API Tripster.
+    *   `check_deeplink_status_api(deeplink_id)`: Проверяет статус диплинка через API Tripster. Результаты работы функции кешируются для повышения производительности.
 *   **`core/tripster_data_extractor.py`**:
     *   `extract_tripster_widgets(html_content, tripster_domain="tripster.ru", max_retries=3, retry_delay=2)`: Извлекает виджеты Tripster из HTML-контента.
     *   `extract_deeplinks(html_content, tripster_domain="tripster.ru")`: Извлекает диплинки Tripster из HTML-контента, исключая ссылки внутри виджетов.
@@ -167,47 +153,12 @@ tree -a -I "env|.git|.env_example|__init__.py" . > project_structure.txt
 *   `python-dotenv`: Используется для загрузки переменных окружения из файла `.env`.
 *   `beautifulsoup4`: Используется для парсинга HTML-контента страниц WordPress.
 *   `urllib.parse`: Используется для работы с URL.
-*   `tenacity`: Используется для реализации повторных попыток при запросах к API.
 *   `pymysql`: Используется для взаимодействия с базой данных MySQL.
-
-## Запуск скриптов
-
-В разделе "Быстрый старт" описан основной порядок запуска скриптов. Вот более подробное описание каждого скрипта и процесса их работы.
-
-1.  **`wordpress_post_indexer.py`**:
-
-    *   **Назначение:** Скрипт является первым шагом в процессе мониторинга. Он подключается к WordPress API вашего сайта, собирает список всех постов и извлекает из них необходимую информацию: ID постов, заголовки. Главная цель - подготовить данные для дальнейшей обработки и поиска виджетов и ссылок Tripster.
-    *   **Действия:**
-        *   Читает переменные окружения из файла `.env`, включая `BASE_URL`, `API_PATH`, `POSTS_PER_PAGE`.
-        *   Запрашивает WordPress API (`/wp-json/wp/v2/posts`) постранично, получая список постов.
-        *   Для каждого поста извлекает ID и заголовок.
-        *   **Использует функцию `unescape_html` для декодирования HTML-сущностей в заголовках постов, чтобы правильно отображать специальные символы (например, кавычки, амперсанды). В случае ошибки при декодировании, возвращается исходный, необработанный текст.**
-        *   Сохраняет полученные данные (ID и заголовки постов) в JSON файл `json/post_data.json`. Файл перезаписывается при каждом запуске скрипта.
-    *   **Запуск:**
-        ```bash
-        python -m scripts.wordpress_post_indexer
-        ```
-    *   **Результат:** Создается или обновляется файл `json/post_data.json`, содержащий список постов WordPress с их ID и заголовками. Этот файл используется скриптом `tripster_link_processor.py` на следующем шаге.
-
-2.  **`tripster_link_processor.py`**:
-
-    *   **Назначение:** Скрипт является вторым и **последним** шагом. Он обрабатывает данные о постах WordPress, собранные на первом шаге, и **извлекает из контента каждого поста виджеты и партнерские ссылки Tripster**. Затем он проверяет работоспособность партнерских ссылок (для диплинков) и виджетов (через API) и сохраняет результаты.
-    *   **Действия:**
-        *   Читает переменные окружения из файла `.env`, включая `TRIPSTER_DOMAIN`, `MAX_RETRIES`, `RETRY_DELAY`, `DB_HOST`, `DB_USER`, `DB_NAME`, `DB_PASSWORD`, `DB_INSERT_TRIPSTER_QUERY_PATH`.
-        *   Читает данные о постах из JSON файла `json/post_data.json`, созданного скриптом `wordpress_post_indexer.py`.
-        *   Для каждого поста:
-            *   Запрашивает полную версию поста через WordPress API, получая HTML-контент. **Использует повторные попытки с экспоненциальной задержкой в случае ошибки при получении данных из WordPress API.**
-            *   **Используя модуль `tripster_data_extractor.py`, извлекает из HTML-контента виджеты и партнерские ссылки Tripster. Для проверки статуса диплинков и виджетов используется функция `check_deeplink_status_api` из модуля `core/tripster_api_utils.py`.**
-            *   Данные о виджетах и ссылках сохраняются в базу данных MySQL, используя функции из `db/db.py`.
-    *   **Запуск:**
-        ```bash
-        python -m scripts.tripster_link_processor
-        ```
-    *   **Результат:** Данные о виджетах и ссылках Tripster сохраняются в таблице `wptq_tripster_links` базы данных MySQL. **После выполнения скрипта необходимо вручную проанализировать данные в базе данных и проверить виджеты и ссылки на предмет неработоспособности. В случае обнаружения неработоспособных элементов, необходимо принять соответствующие меры (например, удалить их из поста или обновить ссылки).**
+*   `functools`: Используется для кеширования результатов выполнения функций (`@lru_cache`).
 
 ## Важные замечания по текущей версии скриптов:
 
-*   Скрипт `tripster_link_processor.py` использует функцию `check_deeplink_status_api` из модуля `core/tripster_api_utils.py` для проверки статуса **диплинков и виджетов** Tripster через API.
+*   Скрипт `tripster_link_processor.py` использует функцию `check_deeplink_status_api` из модуля `core/tripster_api_utils.py` для проверки статуса **диплинков и виджетов** Tripster через API. Результаты работы функции кешируются для повышения производительности.
 *   Данные о виджетах и ссылках сохраняются в базе данных MySQL, используя функции из `db/db.py`.
 *   **После выполнения скрипта `tripster_link_processor.py` необходимо вручную проанализировать данные в базе данных и проверить виджеты и ссылки на предмет неработоспособности. В случае обнаружения неработоспособных элементов, необходимо принять соответствующие меры (например, удалить их из поста или обновить ссылки).**
 
@@ -221,8 +172,8 @@ tree -a -I "env|.git|.env_example|__init__.py" . > project_structure.txt
 
 *   **`wordpress_post_indexer.py`**:
     *   Входные данные:
-        *   Переменные окружения: `BASE_URL`, `API_PATH`, `POSTS_PER_PAGE` (определены в файле `.env`).
-        *   WordPress API доступный по адресу, сформированному из `BASE_URL` и `API_PATH`.
+        *   Переменные окружения: `DOMAIN_TO_CHECK`, `API_PATH`, `POSTS_PER_PAGE` (определены в файле `.env`).
+        *   WordPress API доступный по адресу, сформированному из `DOMAIN_TO_CHECK` и `API_PATH`.
     *   Выходные данные:
         *   JSON файл `json/post_data.json`, содержащий список постов WordPress (ID и заголовки).
         *   Лог-сообщения в консоль и в файл (если настроено).
@@ -240,7 +191,7 @@ tree -a -I "env|.git|.env_example|__init__.py" . > project_structure.txt
 
 *   **`tripster_link_processor.py`**:
     *   Входные данные:
-        *   Переменные окружения: `TRIPSTER_DOMAIN`, `MAX_RETRIES`, `RETRY_DELAY`, `DB_HOST`, `DB_USER`, `DB_NAME`, `DB_PASSWORD`, `DB_INSERT_TRIPSTER_QUERY_PATH` (определены в файле `.env`).
+        *   Переменные окружения: `TRIPSTER_DOMAIN`, `MAX_RETRIES`, `RETRY_DELAY`, `DB_HOST`, `DB_USER`, `DB_NAME`, `DB_PASSWORD` (определены в файле `.env`).
         *   JSON файл `json/post_data.json`, созданный скриптом `wordpress_post_indexer.py`.
         *   HTML-контент постов WordPress, полученный через WordPress API.
     *   Выходные данные:
@@ -270,14 +221,6 @@ tree -a -I "env|.git|.env_example|__init__.py" . > project_structure.txt
 *   **Читаемость кода:** Код должен быть написан таким образом, чтобы его было легко читать и понимать. Используйте понятные имена переменных и функций, избегайте сложного и запутанного кода.
 *   **Документирование кода:** Код должен быть хорошо документирован с использованием комментариев и docstrings. Каждый модуль, класс и функция должны иметь docstring, описывающий их назначение, аргументы и возвращаемые значения.
 *   **Проверка стиля кода:** Используйте инструменты `flake8` и `pylint` для автоматической проверки соответствия кода стандартам кодирования.
-
-### Тестирование
-
-Перед отправкой изменений, убедитесь, что все тесты проходят успешно.
-
-*   **Unit-тесты:** Мы используем unit-тесты для проверки корректности работы отдельных функций и классов.
-*   **Запуск тестов:** Для запуска тестов используйте команду `python -m unittest discover`.
-*   **Покрытие кода:** Стремитесь к тому, чтобы тесты покрывали большую часть кода.
 
 ### Потребность в документации
 
