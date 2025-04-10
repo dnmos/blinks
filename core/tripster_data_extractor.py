@@ -19,6 +19,7 @@ logging.basicConfig(level=DEFAULT_LOG_LEVEL, format='%(asctime)s - %(levelname)s
 # Константы
 USER_AGENT = os.getenv("USER_AGENT", 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
 PAGE_EXPERIENCE_CLASS = 'page-experience'
+PAGE_SPUTNIK_CLASS = 'sputnik-hr'
 PAGE_EXPERIENCE_WRAP_CLASS = 'page-experience__wrap'
 EXP_PAUSED_CLASS = 'exp-paused'
 EXP_PAUSED_PREVIEW_NAME_CLASS = 'exp-paused__preview-name'
@@ -84,6 +85,19 @@ def is_experience_page(soup):
         bool: True, если страница является страницей экскурсии, False - в противном случае.
     """
     return soup.find('div', class_=PAGE_EXPERIENCE_CLASS) is not None
+
+
+def is_sputnik_page(soup):
+    """
+    Проверяет, является ли страница страницей экскурсии Спутник.
+
+    Args:
+        soup (BeautifulSoup): Объект BeautifulSoup с распарсенным HTML.
+
+    Returns:
+        bool: True, если страница является страницей экскурсии Спутник, False - в противном случае.
+    """
+    return soup.find('div', class_=PAGE_SPUTNIK_CLASS) is not None
 
 
 def is_listing_page(soup):
@@ -180,6 +194,9 @@ def extract_widget_info(url, max_retries=3, retry_delay=2):
                 return title, reason, False
             else:
                 return None, None, False
+        elif is_sputnik_page(soup):
+            logging.info("    Страница Спутник")
+            return "Спутник", None, False
         elif is_listing_page(soup):
             logging.info("    Страница со списком экскурсий, авторская страница или главная страница: Активна")
             return None, None, False
@@ -252,13 +269,15 @@ def extract_tripster_widgets(html_content, tripster_domain="tripster.ru", max_re
             # Формируем URL и получаем информацию о виджете
             widget_url = widget_href if widget_id else None
             if widget_url:
-                print(f"  URL виджета: {widget_url}")  # Выводим URL в консоль
+                # print(f"  URL виджета: {widget_url}")  # Выводим URL в консоль
                 title, inactivity_reason, is_unknown_type = extract_widget_info(widget_url, max_retries, retry_delay)
                 url = widget_url #  Сохраняем widget_url
                 if title is None and inactivity_reason is None:
                     status = "active" #  Активен
                     title_element = widget_div.find('a', class_='expcard__title expcard__title__link')
                     title = title_element.text.strip() if title_element else "Заголовок не найден"
+                elif title == "Спутник":
+                    status = "active"
                 else:
                     status = "inactive" #  Не активен
             else:
@@ -268,15 +287,16 @@ def extract_tripster_widgets(html_content, tripster_domain="tripster.ru", max_re
                 is_unknown_type = True
                 url = None
 
-            widgets.append({
-                'widget_number': len(widgets) + 1,
-                'id': widget_id if widget_id else None,
-                'status': status,
-                'title': title,
-                'url': url if url else None,
-                'inactivity_reason': inactivity_reason,
-                'is_unknown_type': is_unknown_type
-            })
+            if title != "Спутник":
+                widgets.append({
+                    'widget_number': len(widgets) + 1,
+                    'id': widget_id if widget_id else None,
+                    'status': status,
+                    'title': title,
+                    'url': url if url else None,
+                    'inactivity_reason': inactivity_reason,
+                    'is_unknown_type': is_unknown_type
+                })
         except Exception as e:
             print(f"Ошибка при обработке виджета: {e}")
 
