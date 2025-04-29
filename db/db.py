@@ -160,14 +160,14 @@ def insert_or_update_data(data):
                     `exp_id`,
                     `exp_title`,
                     `exp_url`,
-                    `status`,
+                    `link_status`,
                     `inactivity_reason`,
                     `is_unknown_type`
                     ) VALUES (%(post_id)s, %(post_title)s, %(link_type)s, %(exp_id)s, %(exp_title)s, %(exp_url)s, %(status)s, %(inactivity_reason)s, %(is_unknown_type)s)
                     ON DUPLICATE KEY UPDATE
                     `post_title` = VALUES(`post_title`),
                     `exp_title` = VALUES(`exp_title`),
-                    `status` = VALUES(`status`),
+                    `link_status` = VALUES(`link_status`),
                     `inactivity_reason` = VALUES(`inactivity_reason`),
                     `is_unknown_type` = VALUES(`is_unknown_type`);
             """
@@ -183,6 +183,48 @@ def insert_or_update_data(data):
         logging.error(traceback.format_exc())
         if connection:
             connection.rollback()
+    finally:
+        if connection:
+            connection.close()
+            logging.info("Соединение с БД закрыто.")
+
+
+def analyze_database():
+    """
+    Analyzes the database to identify inactive Tripster widgets and deeplinks.
+
+    Returns:
+        list: A list of dictionaries, where each dictionary represents an inactive
+              widget or deeplink with its details.
+    """
+    connection = None
+    try:
+        connection = connect()
+        if connection is None:
+            logging.error("Не удалось установить соединение с БД.")
+            return []
+
+        with connection.cursor() as cursor:
+            sql = """
+                SELECT 
+                    id, post_id, post_title, link_type, exp_id, exp_title, exp_url, link_status, inactivity_reason
+                FROM 
+                    wptq_tripster_links
+                WHERE 
+                    link_status = 'inactive'
+            """
+            cursor.execute(sql)
+            inactive_items = cursor.fetchall()
+            logging.info(f"Найдено {len(inactive_items)} неактивных элементов.")
+            return inactive_items
+    except pymysql.MySQLError as e:
+        logging.error(f"Ошибка при анализе базы данных: {e}")
+        logging.error(traceback.format_exc())
+        return []
+    except Exception as e:
+        logging.error(f"Непредвиденная ошибка при анализе базы данных: {e}")
+        logging.error(traceback.format_exc())
+        return []
     finally:
         if connection:
             connection.close()

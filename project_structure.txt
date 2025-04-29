@@ -14,14 +14,17 @@
 ├── __init__.py
 ├── json
 │   ├── post_data example.json
-│   └── post_data.json
 ├── main.py
+├── notifications
+│   └── telegram_notifier.py
 ├── project_structure.txt
 ├── README.md
+├── report
+│   ├── report_generator.py
+│   └── report_template.html
 ├── requirements.txt
-└── scripts
-    ├── __init__.py
-    ├── tripster_link_processor.py
-    └── wordpress_post_indexer.py
-
-6 directories, 19 files
+├── scripts
+│   ├── __init__.py
+│   ├── tripster_link_processor.py
+│   └── wordpress_post_indexer.py
+└── tripster_report.pdf

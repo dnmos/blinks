@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Отчет о неактивных виджетах и диплинках Tripster</title>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 1cm;
+        }
+
+        body {
+            font-family: DejaVuSans, sans-serif;
+            line-height: 1.4;
+            color: #333;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 30px; /* Increased margin-bottom */
+            text-align: center;
+        }
+
+        p {
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            table-layout: fixed;
+        }
+
+        th,
+        td {
+            padding: 8px;
+            text-align: left;
+            word-wrap: break-word;
+            font-size: 10px;
+            vertical-align: top;
+            box-sizing: border-box;
+        }
+
+        th {
+            background-color: #f8f8f8;
+            color: #555;
+            font-weight: bold;
+            border-bottom: 1px solid #ddd;
+        }
+
+        td {
+            border-bottom: 1px solid #eee;
+        }
+
+        /* Column widths in pixels */
+        th:nth-child(1),
+        td:nth-child(1) {
+            width: 25%;
+        }
+
+        th:nth-child(2),
+        td:nth-child(2) {
+            width: 10%;
+        }
+
+        th:nth-child(3),
+        td:nth-child(3) {
+            width: 10%;
+        }
+
+        th:nth-child(4),
+        td:nth-child(4) {
+            width: 30%;
+        }
+
+        th:nth-child(5),
+        td:nth-child(5) {
+            width: 25%;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Отчет о неактивных виджетах и диплинках Tripster</h1>
+    <p>Всего неактивных элементов: {{ total_inactive }}</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Заголовок поста</th>
+                <th>Тип ссылки</th>
+                <th>ID</th>
+                <th>Заголовок/Анкор</th>
+                <th>Причина неактивности</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in inactive_items %}
+            <tr>
+                <td>{{ item.post_title }}</td>
+                <td>{{ item.link_type }}</td>
+                <td>{{ item.exp_id }}</td>
+                <td>{{ item.exp_title or item.anchor }}</td>
+                <td>{{ item.inactivity_reason }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+
+</html>

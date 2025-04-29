@@ -74,7 +74,7 @@ def save_tripster_data(post_id, post_title, link_type, data):
         'exp_id': str(data.get('anchor') or data.get('id') or ''),
         'exp_title': str(data.get('title') or ''),
         'exp_url': str(data.get('url') or ''),
-        'status': str(data.get('status') or ''),
+        'link_status': str(data.get('status') or ''),
         'inactivity_reason': str(data.get('inactivity_reason') or ''),
         'is_unknown_type': data.get('is_unknown_type') if data.get('is_unknown_type') is not None else False
     }
