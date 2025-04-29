@@ -120,7 +120,7 @@ tree -a -I "env|.git|.env_example" . > project_structure.txt
     *   `insert_or_update_data(data)`: Выполняет SQL-запрос для вставки или обновления данных в базу данных.
     *   `analyze_database()`: Анализирует базу данных для выявления неактивных виджетов и диплинков.
 *   **`notifications/telegram_notifier.py`**:
-    *   `send_telegram_notification(report_path)`: Отправляет уведомление в Telegram (заглушка, если не указаны API Token и Chat ID).
+    *   `send_telegram_notification(report_path)`: Отправляет уведомление в Telegram.
 *   **`report/report_generator.py`**:
     *   `generate_report(inactive_items, output_filename="tripster_report.pdf")`: Генерирует PDF-отчет о неактивных виджетах и ссылках.
 *   **`scripts/tripster_link_processor.py`**:
